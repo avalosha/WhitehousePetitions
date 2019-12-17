@@ -11,12 +11,15 @@ import UIKit
 class ViewController: UITableViewController {
 
     var petitions = [Petition]()
+    var filteredPetitions = [Petition]()
+    var originalPetitions = [Petition]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         navigationItem.largeTitleDisplayMode = .never
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Credits", style: .plain, target: self, action: #selector(showCredits))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(showSearch))
         
         let urlString: String
 
@@ -43,6 +46,7 @@ class ViewController: UITableViewController {
 
         if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
             petitions = jsonPetitions.results
+            originalPetitions = petitions
             tableView.reloadData()
         }
     }
@@ -57,6 +61,34 @@ class ViewController: UITableViewController {
         let ac = UIAlertController(title: "Credits", message: "The data comes from the We The People API of the Whitehouse.", preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
         present(ac, animated: true)
+    }
+    
+    @objc func showSearch() {
+        let ac = UIAlertController(title: "Enter petition", message: nil, preferredStyle: .alert)
+        ac.addTextField()
+
+        let submitAction = UIAlertAction(title: "Search", style: .default) { [weak self, weak ac] _ in
+            guard let word = ac?.textFields?[0].text else { return }
+            self?.filterPetition(word)
+        }
+
+        ac.addAction(submitAction)
+        present(ac, animated: true)
+    }
+    
+    func filterPetition(_ word: String) {
+        filteredPetitions.removeAll()
+        print(word)
+        for petition in originalPetitions {
+            if petition.title.lowercased().contains(word.lowercased()) {
+                filteredPetitions.append(petition)
+            }
+        }
+        
+        guard filteredPetitions.count > 0 else { return }
+        petitions.removeAll()
+        petitions = filteredPetitions
+        tableView.reloadData()
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
